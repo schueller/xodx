@@ -1,10 +1,13 @@
+<div>
 <h2>Profile of ...</h2>
 <?php if(isset($this->profileshowDepiction)) : ?> <img class="avatar size128" src="<?= $this->profileshowDepiction ?>" /> <?php endif; ?>
 <div class="profile">
-    <h3><?= $this->profileshowName ?></h3>
-    <?php if(isset($this->profileshowNick)) : ?> <h4><?= $this->profileshowNick ?></h4> <?php endif; ?>
+    <div><h3><?= $this->profileshowName ?></h3></div>
+     <div><?php if(isset($this->profileshowNick)) : ?> <h4><?= $this->profileshowNick ?></h4> <?php endif; ?></div>
+	<div style="float: left; width: 60%;">
+	<div>
     <h5>knows ...</h5>
-    <form method="post" action="?c=profile&amp;a=addfriend">
+
     <ul>
 <?php
 foreach($this->profileshowKnows as $contact) :
@@ -16,25 +19,22 @@ if ($contact['name'] != null) {
 ?>
         <li><a href="?c=profile&amp;a=show&amp;person=<?= urlencode($contact['contactUri']) ?>"><?= $name ?></a></li>
 <?php endforeach; ?>
-        <li>
-            <div class="input-append">
-                <input type="hidden" name="person" value="<?= htmlentities($this->profileshowPersonUri) ?>" />
-                <input type="text" name="friend" /><button class="btn btn-primary" type="submit">Add</button>
-            </div>
-        </li>
-    </ul>
-    </form>
+	  </ul>
+	</div>
+	<div>
     <h2>Pings</h2>
     <ul>
     <?php foreach ($this->profileshowNews as $notification) : ?>
         <li><?= var_export($notification, true) ?></li>
     <?php endforeach; ?>
     </ul>
+	</div>
+	<div>
     <h2>Activities</h2>
     <?php if (isset($this->profileshowActivities)) : ?>
     <?php foreach ($this->profileshowActivities as $activity) : ?>
     <div class="activity">
-        <p>
+        <p>a
             <a href="<?= $activity['uri'] ?>"><strong><?= $activity['title'] ?></strong></a><br />
         </p>
         <div>
@@ -62,9 +62,22 @@ if ($contact['name'] != null) {
     <?php endforeach; ?>
     <?php else: ?>
     <div class="well">
-        There are not Activities of this person
+        There are no Activities of this person
     </div>
     <?php endif; ?>
+	</div>
+	</div>
+	<div style="float: right; width: 35%;">
+	<div>
+			<h2>Add People ...</h2>
+				<form method="post" action="?c=profile&amp;a=addfriend">
+            <div class="input-append">
+                <input type="hidden" name="person" value="<?= htmlentities($this->profileshowPersonUri) ?>" />
+                <input type="text" name="friend" /><button class="btn btn-primary" type="submit">Add</button>
+            </div>
+			    </form>
+	</div>
+	<div>
     <h2>Add Activity ...</h2>
         <strong>Actor:</strong> <?= $this->profileshowName ?>
         <input type="hidden" name="actor" value="<?= $this->profileshowPersonUri ?>" />
@@ -112,4 +125,7 @@ if ($contact['name'] != null) {
             <input type="text" name="feeduri" /><button class="btn btn-primary" type="submit">Subscribe</button>
         </div>
     </form>
+	</div>
+	</div>
+	</div>
 </div>
