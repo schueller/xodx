@@ -5,6 +5,10 @@
  * @license http://opensource.org/licenses/gpl-license.php GNU General Public License (GPL)
  */
 
+/**
+ * @deprecated we don't need this controller, beacause the person things should be done in the
+ * Xodx_PersonController and the list action can move somewhere else.
+ */
 class Xodx_ProfileController extends Xodx_ResourceController
 {
     public function listAction($template)
@@ -15,9 +19,7 @@ class Xodx_ProfileController extends Xodx_ResourceController
             'PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' .
             'SELECT DISTINCT ?person ' .
             'WHERE { ' .
-            '   ?profile a foaf:PersonalProfileDocument . ' .
-            '   ?profile foaf:primaryTopic ?person . ' .
-//            '   ?person foaf:name ?name . ' .
+            '   ?person a foaf:Person . ' .
             '}'
         );
 
@@ -51,61 +53,7 @@ class Xodx_ProfileController extends Xodx_ResourceController
 
         $personController = $this->_app->getController('Xodx_PersonController');
 
-        // TODO check rights
-        $allowed = true;
-
-        if ($allowed) {
-            $personController->addFriend($personUri, $friendUri);
-        } else {
-            $personController->addFriendRequest($personUri, $friendUri);
-        }
-
-        return $template;
-    }
-
-    public function getfriendlistAction($template)
-    {
-        $bootstrap = $this->_app->getBootstrap();
-        $request = $bootstrap->getResource('request');
-
-        // get URI
-        $personUri = $request->getValue('person', 'get');
-
-        $person = new Xodx_Person($personUri);
-
-        // show only public Friends
-        $allowed = false;
-
-        $friendList = null;
-        if ($allowed) {
-            $friendList = $person->getFriends();
-        } else {
-            $friendList = $person->getPublicFriends();
-        }
-
-        return $template;
-    }
-
-    public function getprofileAction($template)
-    {
-        $bootstrap = $this->_app->getBootstrap();
-        $request = $bootstrap->getResource('request');
-
-        // get URI
-        $personUri = $request->getValue('person', 'get');
-
-        $person = new Xodx_Person($personUri);
-
-        // show only public Profile
-
-        $allowed = false;
-
-        $profile = null;
-        if ($allowed) {
-            $profile = $person->getProfile();
-        } else {
-            $profile = $person->getPublicProfile();
-        }
+        $personController->addFriend($personUri, $friendUri);
 
         return $template;
     }

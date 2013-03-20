@@ -22,24 +22,6 @@ class Xodx_UserController extends Xodx_ResourceController
     private $_users = array();
 
     /**
-     * With this action a user can subscribe to a specified feed
-     * @param user (post) the uri of the user, who wants to subscribe
-     * @param feeduri (post) the uri of the feed where he want so subscribe to
-     */
-    public function subscribeAction ($template)
-    {
-        $bootstrap = $this->_app->getBootstrap();
-        $request = $bootstrap->getResource('request');
-
-        $userUri = $request->getValue('user', 'post');
-        $feedUri = $request->getValue('feeduri', 'post');
-
-        $this->subscribeToFeed($userUri, $feedUri);
-
-        return $template;
-    }
-
-    /**
      * This action gets the notifications for the specified user
      * @param user (get) the uri of the user who wants to get its notifications
      * @return json representation of the Xodx_Notification objects
@@ -50,6 +32,10 @@ class Xodx_UserController extends Xodx_ResourceController
         $request = $bootstrap->getResource('request');
 
         $userUri = $request->getValue('user', 'get');
+
+        if ($userUri === null) {
+            $userUri = $this->getUser()->getUri();
+        }
 
         $notifications = $this->getNotifications($userUri);
 
@@ -63,26 +49,29 @@ class Xodx_UserController extends Xodx_ResourceController
 
     /**
      *
-     * Method returns the Uri of the sioc:UserAccount
-     * @param unknown_type $personUri
+     * Enter description here ...
+     * @param unknown_type $subscriberUri
+     * @param unknown_type $feedUri
      */
-    private function _getVerifiedUserAccount ($personUri)
+    public function subscribeToResource ($subscriberUri, $resourceUri, $feedUri = null)
     {
-        $nsFoaf = 'http://xmlns.com/foaf/0.1/';
-        $nsSioc = 'http://rdfs.org/sioc/ns#';
 
-        $bootstrap = $this->_app->getBootstrap();
-        $request = $bootstrap->getResource('request');
-        $resourceController = $this->_app->getController('Xodx_ResourceController');
+        $model = $this->_app->getBootstrap()->getResource('model');
 
-        $type = $resourceController->getType($personUri);
-
-        // TODO replace str_replace with SPARQL query for foaf:Account with NS === BaseUri()
-        if ($type === $nsFoaf . 'Person') {
-            $personUri = str_replace('?c=person&', '?c=user&', $personUri);
+        if ($feedUri === null) {
+            $feedUri = $this->getActivityFeedUri($resourceUri);
         }
 
-        return $personUri;
+        $feedObject = array(
+            'type' => 'uri',
+            'value' => $feedUri
+        );
+
+        $nsDssn = 'http://purl.org/net/dssn/';
+        $model->addStatement($resourceUri, $nsDssn . 'activityFeed', $feedObject);
+
+        $this->_subscribeToFeed($subscriberUri, $feedUri);
+
     }
 
     /**
@@ -90,18 +79,23 @@ class Xodx_UserController extends Xodx_ResourceController
      * @param $userUri the uri of the user who wants to be subscribed
      * @param $feedUri the uri of the feed where she wants to subscribe
      */
-    public function subscribeToFeed ($userUri, $feedUri)
+    private function _subscribeToFeed ($subscriberUri, $feedUri)
     {
         $bootstrap = $this->_app->getBootstrap();
         $logger = $bootstrap->getResource('logger');
         $resourceController = $this->_app->getController('Xodx_ResourceController');
 
-        $logger->info('subscribeToFeed: user: ' . $userUri . ', feed: ' . $feedUri);
-        $type = $resourceController->getType($userUri);
+        $nsFoaf = 'http://xmlns.com/foaf/0.1/';
+        $feed = DSSN_Activity_Feed_Factory::newFromUrl($feedUri);
+        $type = $resourceController->getType($subscriberUri);
 
-        $userUri = $this->_getVerifiedUserAccount($userUri);
+        if ($type === $nsFoaf . 'Person') {
+            $subscriberUri = $this->getUserUri($subscriberUri);
+        }
 
-        if (!$this->_isSubscribed($userUri, $feedUri)) {
+        $logger->info('subscribeToFeed: user: ' . $subscriberUri . ', feed: ' . $feedUri);
+
+        if (!$this->_isSubscribed($subscriberUri, $feedUri)) {
             $pushController = $this->_app->getController('Xodx_PushController');
             if ($pushController->subscribe($feedUri)) {
 
@@ -109,20 +103,55 @@ class Xodx_UserController extends Xodx_ResourceController
                 $model    = $bootstrap->getResource('model');
                 $graphUri = $model->getModelIri();
 
-                $nsSioc = 'http://rdfs.org/sioc/ns#';
+                $nsDssn = 'http://purl.org/net/dssn/';
+                $nsRdf = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 
-                $subscribeStatement = array(
-                    $userUri => array(
-                        $nsSioc . 'subscriber_of' => array(
-                            array(
-                                'type' => 'uri',
-                                'value' => $feedUri
-                            )
+                $subUri = $this->_app->getBaseUri() . '&c=ressource&id=' . md5(rand());
+                $cbUri  = $this->_app->getBaseUri() . '?c=push&a=callback';
+
+                $subscription = array(
+                $subUri => array(
+                    $nsRdf . 'type' => array(
+                        array(
+                            'type' => 'uri',
+                            'value' => $nsDssn . 'Subscription'
+                        )
+                    ),
+                    $nsDssn . 'subscriptionCallback' => array(
+                        array(
+                            'type' => 'uri',
+                            'value' => $cbUri
+                        )
+                    ),
+                    $nsDssn . 'subscriptionHub' => array(
+                        array(
+                            'type' => 'uri',
+                            'value' => $feed->getLinkHub()
+                        )
+                    ),
+                    $nsDssn . 'subscriptionTopic' => array(
+                        array(
+                            'type' => 'uri',
+                            'value' => $feed->getLinkSelf()
+                        )
+                    ),
+                )
+            );
+
+            $store->addMultipleStatements($graphUri, $subscription);
+
+            $subscribeStatement = array(
+                $subscriberUri => array(
+                    $nsDssn . 'subscribedTo' => array(
+                        array(
+                            'type' => 'uri',
+                            'value' => $subUri
                         )
                     )
-                );
+                )
+            );
 
-                $store->addMultipleStatements($graphUri, $subscribeStatement);
+            $store->addMultipleStatements($graphUri, $subscribeStatement);
             }
         }
     }
@@ -137,14 +166,15 @@ class Xodx_UserController extends Xodx_ResourceController
         $bootstrap = $this->_app->getBootstrap();
         $model = $bootstrap->getResource('model');
 
-        $query = 'SELECT ?uri' . PHP_EOL;
+        $query = 'PREFIX dssn: <http://purl.org/net/dssn/> ' . PHP_EOL;
+        $query.= 'SELECT ?uri' . PHP_EOL;
         $query.= 'WHERE {' . PHP_EOL;
-        $query.= '  <' . $userUri . '> xodx:notification ?uri .' . PHP_EOL;
+        $query.= '  ?uri dssn:notify <' . $userUri . '> .' . PHP_EOL;
         $query.= '}' . PHP_EOL;
 
         $result = $model->sparqlQuery($query);
 
-        $notificationFactory = new Xodx_NotificationFactory($this->app);
+        $notificationFactory = new Xodx_NotificationFactory($this->_app);
         $notifications = array();
         foreach ($result as $notification) {
             $notificationUri = $notification['uri'];
@@ -159,16 +189,87 @@ class Xodx_UserController extends Xodx_ResourceController
      * @param $userUri a string which contains the URI of the required user
      * @return Xodx_User instance with the specified URI
      */
-    public function getUser ($userUri)
+    public function getUser ($userUri = null)
     {
+        if ($userUri === null) {
+            $applicationController = $this->_app->getController('Xodx_ApplicationController');
+            $userId = $applicationController->getUser();
+            $userUri = $this->_app->getBaseUri() . '?c=user&id=' . $userId;
+        }
+
         if (!isset($this->_users[$userUri])) {
 
+            $bootstrap = $this->_app->getBootstrap();
+            $model = $bootstrap->getResource('model');
+
+            $query = 'PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' . PHP_EOL;
+            $query.= 'SELECT ?name ?person' . PHP_EOL;
+            $query.= 'WHERE {' . PHP_EOL;
+            $query.= '  <' . $userUri . '> foaf:accountName ?name ;' . PHP_EOL;
+            $query.= '      sioc:account_of ?person .' . PHP_EOL;
+            $query.= '}' . PHP_EOL;
+
+            $result = $model->sparqlQuery($query);
+            if (count($result) > 0) {
+                $userId = $result[0]['name'];
+                $personUri = $result[0]['person'];
+            } else {
+                // This case is needed because ne guest account exists but it should throw an
+                // Exception if this issue is cleared
+                if (!isset($userId)) {
+                    $userId = 'unkown';
+                }
+                $personUri = null;
+            }
+
             $user = new Xodx_User($userUri);
+            $user->setName($userId);
+            $user->setPerson($personUri);
 
             $this->_users[$userUri] = $user;
         }
 
         return $this->_users[$userUri];
+    }
+
+    /**
+     * Get the userAccount of a Person
+     * @param string $personUri the uri of the person
+     * @return Xodx_User for the given person
+     */
+    public function getUserForPerson ($personUri)
+    {
+        $bootstrap = $this->_app->getBootstrap();
+        $model = $bootstrap->getResource('model');
+
+        // SPARQL-Query
+        $query = 'PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' . PHP_EOL;
+        $query.= 'SELECT  ?userUri ' . PHP_EOL;
+        $query.= 'WHERE {' . PHP_EOL;
+        $query.= '   <' . $personUri . '> foaf:account ?userUri. ' . PHP_EOL;
+        $query.= '}' . PHP_EOL;
+
+        $userResult = $model->sparqlQuery($query);
+
+        if (count($userResult[0])>0) {
+            return $this->getUser($userResult[0]['userUri']);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the user uri of a user which is accosiated to the given person
+     * @deprecated use getUserForPerson
+     */
+    public function getUserUri ($personUri)
+    {
+        $user = $this->getUserForPerson($personUri);
+        if ($user !== null) {
+            return $user->getUri();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -184,14 +285,14 @@ class Xodx_UserController extends Xodx_ResourceController
         // TODO prevent sparql injection
 
         $query = '' .
-            'PREFIX xodx: <http://example.org/voc/xodx/> ' .
+            'PREFIX ow: <http://ns.ontowiki.net/SysOnt/> ' .
             'PREFIX sioc: <http://rdfs.org/sioc/ns#> ' .
             'PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' .
             'SELECT ?userUri ?passwordHash ' .
             'WHERE { ' .
             '   ?userUri a sioc:UserAccount ; ' .
             '       foaf:accountName "' . $userName . '" ; ' .
-            '       xodx:hasPassword ?passwordHash . ' .
+            '       ow:userPassword ?passwordHash . ' .
             '}';
         $passwordQueryResult = $model->sparqlQuery($query);
 
@@ -213,97 +314,62 @@ class Xodx_UserController extends Xodx_ResourceController
         $bootstrap = $this->_app->getBootstrap();
         $model = $bootstrap->getResource('model');
 
-        $query = '' .
-            'PREFIX sioc: <http://rdfs.org/sioc/ns#>' .
-            'ASK { ' .
-            '   <' . $userUri . '> sioc:subscriber_of <' . $feedUri . '> . ' .
-            '}';
+        $query = 'PREFIX dssn: <http://purl.org/net/dssn/> ' . PHP_EOL;
+        $query.= 'ASK  ' . PHP_EOL;
+        $query.= 'WHERE { ' . PHP_EOL;
+        $query.= '   <' . $userUri . '> dssn:subscribedTo      ?subUri. ' . PHP_EOL;
+        $query.= '        ?subUri       dssn:subscriptionTopic <' . $feedUri. '> . ' . PHP_EOL;
+        $query.= '}' . PHP_EOL;
         $subscribedResult = $model->sparqlQuery($query);
 
-        if (is_array($subscribedResult)) {
-            // Erfurt problem
-            return empty($subscribedResult[0]['__ask_retval']);
-        } else if (is_bool($subscribedResult)) {
-            return $subscriptionResult;
-        } else {
-            $logger = $bootstrap->getResource('logger');
-            $logger->info('isSubscribed: user: ' . $userUri . ', feed: ' . $feedUri . '. ASK Query returned unexpectedly: ' . var_export($subscriptionResult));
+        if (count($subscribedResult) > 0) {
+            if (is_array($subscribedResult)) {
+                // Erfurt problem
+                return empty($subscribedResult[0]['__ask_retval']);
+            } else if (is_bool($subscribedResult)) {
+                return $subscriptionResult;
+            } else {
+                $logger = $bootstrap->getResource('logger');
+                $logger->info('isSubscribed: user: ' . $userUri . ', feed: ' . $feedUri . '. ASK Query returned unexpectedly: ' . var_export($subscriptionResult));
 
-            throw new Exception('Erfurt returned an unexpected result to the ask query.');
+                throw new Exception('Erfurt returned an unexpected result to the ask query.');
+            }
         }
+        return null;
     }
 
-	public function homeAction($template) {
-		/*		
-		$bootstrap = $this->_app->getBootstrap();
+
+    /**
+     * Find all subscriptions of a user
+     * @param $userUri the uri of the user in question
+     * @return array $subscribedFeeds all feeds a user is subscribed to
+     */
+    public function getSubscriptions ($userUri)
+    {
+        $bootstrap = $this->_app->getBootstrap();
         $model = $bootstrap->getResource('model');
-        $request = $bootstrap->getResource('request');
-        $id = $request->getValue('id', 'get');
-        $controller = $request->getValue('c', 'get');
 
-        // get URI
-        $personUri = $this->_app->getBaseUri() . '?c=' . $controller . '&id=' . $id;
+        // SPARQL-Query
+        $query = 'PREFIX dssn: <http://purl.org/net/dssn/> ' . PHP_EOL;
+        $query.= 'SELECT  ?feedUri' . PHP_EOL;
+        $query.= 'WHERE {' . PHP_EOL;
+        $query.= '   <' . $userUri . '> dssn:subscribedTo        ?subUri. ' . PHP_EOL;
+        $query.= '   ?subUri            dssn:subscriptionTopic   ?feedUri. ' . PHP_EOL;
+        $query.= '}' . PHP_EOL;
 
-        $nsFoaf = 'http://xmlns.com/foaf/0.1/';
+        $feedResult = $model->sparqlQuery($query);
 
-        $profileQuery = 'PREFIX foaf: <' . $nsFoaf . '> ' .
-            'SELECT ?depiction ?name ?nick ' .
-            'WHERE { ' .
-            '   <' . $personUri . '> a foaf:Person . ' .
-            '   OPTIONAL {<' . $personUri . '> foaf:depiction ?depiction .} ' .
-            '   OPTIONAL {<' . $personUri . '> foaf:name ?name .} ' .
-            '   OPTIONAL {<' . $personUri . '> foaf:nick ?nick .} ' .
-            '}';
+        $subscribedFeeds = array();
 
-        // TODO deal with language tags
-        $contactsQuery = 'PREFIX foaf: <' . $nsFoaf . '> ' .
-            'SELECT ?contactUri ?name ' .
-            'WHERE { ' .
-            '   <' . $personUri . '> foaf:knows ?contactUri . ' .
-            '   OPTIONAL {?contactUri foaf:name ?name .} ' .
-            '}';
-
-        $profile = $model->sparqlQuery($profileQuery);
-
-        if (count($profile) < 1) {
-            $newStatements = Saft_Tools::getLinkedDataResource($this->_app, $personUri);
-            if ($newStatements !== null) {
-                $template->addDebug('Import Profile with LinkedDate');
-
-                $modelNew = new Erfurt_Rdf_MemoryModel($newStatements);
-                $newStatements = $modelNew->getStatements();
-
-                $template->addDebug(var_export($newStatements, true));
-
-                $profile = array();
-                $profile[0] = array(
-                    'depiction' => $modelNew->getValue($personUri, $nsFoaf . 'depiction'),
-                    'name' => $modelNew->getValue($personUri, $nsFoaf . 'name'),
-                    'nick' => $modelNew->getValue($personUri, $nsFoaf . 'nick')
-                );
+        // results in array
+        foreach ($feedResult as $feed) {
+            if (isset($feed['feedUri'])) {
+                $subscribedFeeds[] = $feed['feedUri'];
             }
-            //$knows = $modelNew->sparqlQuery($contactsQuery);
-
-            $knows = array();
-        } else {
-            $knows = $model->sparqlQuery($contactsQuery);
         }
 
-        $activityController = $this->_app->getController('Xodx_ActivityController');
-        $activities = $activityController->getActivities($personUri);
-        $news = $this->getNotifications($personUri);
+        return $subscribedFeeds;
+    }
 
-        $template->profileshowPersonUri = $personUri;
-        $template->profileshowDepiction = $profile[0]['depiction'];
-        $template->profileshowName = $profile[0]['name'];
-        $template->profileshowNick = $profile[0]['nick'];
-        $template->profileshowActivities = $activities;
-        $template->profileshowKnows = $knows;
-        $template->profileshowNews = $news;
-		*/
-        $template->addContent('templates/usershow.phtml');
-
-		return $template;
-	}
 
 }

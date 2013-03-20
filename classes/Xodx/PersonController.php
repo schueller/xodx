@@ -13,7 +13,7 @@ class Xodx_PersonController extends Xodx_ResourceController
     {
         if (!isset($this->_persons[$psersonUri])) {
 
-            $person = new Xodx_Person($personUri);
+            $person = new DSSN_Foaf_Person($personUri);
 
             $this->_persons[$personUri] = $person;
         }
@@ -24,7 +24,9 @@ class Xodx_PersonController extends Xodx_ResourceController
     public function addFriend ($personUri, $contactUri)
     {
         $model = $this->_app->getBootstrap()->getResource('model');
+        $userController = $this->_app->getController('Xodx_UserController');
 
+        // update WebID
         $model->addStatement($personUri, 'http://xmlns.com/foaf/0.1/knows', array('type' => 'uri', 'value' => $contactUri));
 
         $nsAair = 'http://xmlns.notu.be/aair#';
@@ -32,29 +34,14 @@ class Xodx_PersonController extends Xodx_ResourceController
 
         // add Activity to activity Stream
         $object = array(
-            'type' => 'uri',
-            'value' => $contactUri
+            'type' => 'Uri',
+            'content' => $contactUri,
+            'replyObject' => 'false'
         );
         $activityController->addActivity($personUri, $nsAair . 'MakeFriend', $object);
-
-        // ping the new contact
-        $pingbackController = $this->_app->getController('Xodx_PingbackController');
-        $pingbackController->sendPing($personUri, $contactUri);
-
-        // Subscribe user to feed of activityObject (photo, post, note)
-        $feedUri = $this->_app->getBaseUri() . '?c=feed&a=getFeed&uri=' . urlencode($objectUri);
-        $personUri = urlencode($personUri);
-        $userController = $this->_app->getController('Xodx_UserController');
-        $userController->subscribeToFeed($personUri, $feedUri);
-    }
-
-    public function addFriendRequest ($personUri, $contactUri)
-    {
-        $model = $this->_app->getBootstrap()->getResource('model');
-
-        $model->addStatement($personUri, 'http://ns.xodx.org/friendRequest', array('type' => 'uri', 'value' => $contactUri));
-
-        // TODO trigger notification
+        $userUri = $userController->getUserUri($personUri);
+        $feedUri = $this->getActivityFeedUri($contactUri);
+        $userController->subscribeToResource ($userUri, $contactUri, $feedUri);
     }
 
     /**
@@ -89,7 +76,7 @@ class Xodx_PersonController extends Xodx_ResourceController
      * This method returns all activities of a person
      * @param $personUri the uri of the person whoes activities should be returned
      * @return an array of activities
-     * TODO return an array of Xodx_Activity objects
+     * TODO return an array of DSSN_Activity objects
      */
     public function getActivities ($personUri)
     {
@@ -190,10 +177,10 @@ class Xodx_PersonController extends Xodx_ResourceController
 
     public function showAction ($template)
     {
-        $bootstrap = $this->_app->getBootstrap();
-        $model = $bootstrap->getResource('model');
-        $request = $bootstrap->getResource('request');
-        $id = $request->getValue('id', 'get');
+        $bootstrap  = $this->_app->getBootstrap();
+        $model      = $bootstrap->getResource('model');
+        $request    = $bootstrap->getResource('request');
+        $id         = $request->getValue('id', 'get');
         $controller = $request->getValue('c', 'get');
 
         // get URI
@@ -201,27 +188,28 @@ class Xodx_PersonController extends Xodx_ResourceController
 
         $nsFoaf = 'http://xmlns.com/foaf/0.1/';
 
-        $profileQuery = 'PREFIX foaf: <' . $nsFoaf . '> ' .
-            'SELECT ?depiction ?name ?nick ' .
-            'WHERE { ' .
-            '   <' . $personUri . '> a foaf:Person . ' .
-            '   OPTIONAL {<' . $personUri . '> foaf:depiction ?depiction .} ' .
-            '   OPTIONAL {<' . $personUri . '> foaf:name ?name .} ' .
-            '   OPTIONAL {<' . $personUri . '> foaf:nick ?nick .} ' .
-            '}';
+        $profileQuery = 'PREFIX foaf: <' . $nsFoaf . '> ' . PHP_EOL;
+        $profileQuery.= 'SELECT ?depiction ?name ?nick ' .  PHP_EOL;
+        $profileQuery.= 'WHERE { ' .  PHP_EOL;
+        $profileQuery.= '   <' . $personUri . '> a foaf:Person . ' . PHP_EOL;
+        $profileQuery.= 'OPTIONAL {<' . $personUri . '> foaf:depiction ?depiction .} ' . PHP_EOL;
+        $profileQuery.= 'OPTIONAL {<' . $personUri . '> foaf:name ?name .} ' . PHP_EOL;
+        $profileQuery.= 'OPTIONAL {<' . $personUri . '> foaf:nick ?nick .} ' . PHP_EOL;
+        $profileQuery.= '}'; PHP_EOL;
 
         // TODO deal with language tags
-        $contactsQuery = 'PREFIX foaf: <' . $nsFoaf . '> ' .
-            'SELECT ?contactUri ?name ' .
-            'WHERE { ' .
-            '   <' . $personUri . '> foaf:knows ?contactUri . ' .
-            '   OPTIONAL {?contactUri foaf:name ?name .} ' .
-            '}';
+        $contactsQuery = 'PREFIX foaf: <' . $nsFoaf . '> ' . PHP_EOL;
+        $contactsQuery.=     'SELECT ?contactUri ?name ' . PHP_EOL;
+        $contactsQuery.= 'WHERE { ' . PHP_EOL;
+        $contactsQuery.= '   <' . $personUri . '> foaf:knows ?contactUri . ' . PHP_EOL;
+        $contactsQuery.= '   OPTIONAL {?contactUri foaf:name ?name .} ' . PHP_EOL;
+        $contactsQuery.= '}';
 
         $profile = $model->sparqlQuery($profileQuery);
 
         if (count($profile) < 1) {
-            $newStatements = Saft_Tools::getLinkedDataResource($this->_app, $personUri);
+            $linkeddataHelper = $this->_app->getHelper('Saft_Helper_LinkeddataHelper');
+            $newStatements = $linkeddataHelper->getResource($personUri);
             if ($newStatements !== null) {
                 $template->addDebug('Import Profile with LinkedDate');
 
@@ -244,8 +232,18 @@ class Xodx_PersonController extends Xodx_ResourceController
             $knows = $model->sparqlQuery($contactsQuery);
         }
 
+        $userController  = $this->_app->getController('Xodx_UserController');
+        $userUri         = $userController->getUserUri($personUri);
+        $subResources    = $userController->getSubscriptionResources($userUri);
+
         $activityController = $this->_app->getController('Xodx_ActivityController');
-        $activities = $activityController->getActivities($personUri);
+        $activities = array();
+
+        foreach ($subResources as $resourceUri) {
+            $act = $activityController->getActivities($resourceUri);
+            $activities = array_merge($activities, $act);
+        }
+
         $news = $this->getNotifications($personUri);
 
         $template->profileshowPersonUri = $personUri;

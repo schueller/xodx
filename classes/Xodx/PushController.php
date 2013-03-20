@@ -54,6 +54,7 @@ class Xodx_PushController extends Saft_Controller
 
             $result = curl_exec($curlHandler);
             $httpCode = curl_getinfo($curlHandler, CURLINFO_HTTP_CODE);
+            // TODO check if we should better use the feedUri and ignorre the effective url
             $topicUri = curl_getinfo($curlHandler, CURLINFO_EFFECTIVE_URL);
 
             $logger->info('push subscribe: return code from feed: ' . $httpCode);
@@ -121,14 +122,14 @@ class Xodx_PushController extends Saft_Controller
                         throw new Exception('Subscription to hub failed');
                     }
 
-                    $nsXodx = 'http://example.org/voc/xodx/';
+                    $nsDssn = 'http://purl.org/net/dssn/';
 
                     $hubObj = array(
                         'type' => 'uri',
                         'value' => $hubUrl
                     );
 
-                    $store->addStatement($graphUri, $feedUri, $nsXodx . 'subscribedAt', $hubObj);
+                    $store->addStatement($graphUri, $feedUri, $nsDssn . 'subscribedAt', $hubObj);
                 } else {
                     throw new Exception('No hub found in feed');
                 }
@@ -244,13 +245,13 @@ class Xodx_PushController extends Saft_Controller
         $bootstrap = $this->_app->getBootstrap();
         $model = $bootstrap->getResource('model');
 
-        // 'PREFIX dssn: <http://purl.org/net/dssn/> ' .
-        $query = '' .
-            'PREFIX xodx: <http://example.org/voc/xodx/> ' .
-            'SELECT ?hub ' .
-            'WHERE { ' .
-            '   <' . $feed . '> xodx:subscribedAt ?hub . ' .
-            '}';
+        $query = 'PREFIX dssn: <http://purl.org/net/dssn/> ' . PHP_EOL;
+        $query.= 'SELECT ?hub ' . PHP_EOL;
+        $query.= 'WHERE { ' . PHP_EOL;
+        $query.= '?subscription a                           dssn:Subscription. ' . PHP_EOL;
+        $query.= '?subscription dssn:subscriptionTopic      <' . $feed . '>; ' . PHP_EOL;
+        $query.= '              dssn:subscriptionHub        ?hub. ' . PHP_EOL;
+        $query.= '}';
         $subscriptionResult = $model->sparqlQuery($query);
 
         return (count($subscriptionResult) > 0);

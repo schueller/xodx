@@ -178,50 +178,53 @@ class Xodx_PingbackController extends Saft_Controller
      */
     public function sendPing($source, $target, $comment = null)
     {
-        $targetStatements = Saft_Tools::getLinkedDataResource($this->_app, $target);
+        $bootstrap = $this->_app->getBootstrap();
+        $logger    = $bootstrap->getResource('logger');
 
-        if ($targetStatements === null) {
-            throw new Exception('Can\'t send pingback because target doesn\'t contain RDF data.');
-        }
+        $linkeddataHelper = $this->_app->getHelper('Saft_Helper_LinkeddataHelper');
+        $targetStatements = $linkeddataHelper->getResource($target);
 
-        // TODO check for X-PINGBACK in header
+        if ($targetStatements !== null) {
+            $memModel = new Erfurt_Rdf_MemoryModel($targetStatements);
 
-        $memModel = new Erfurt_Rdf_MemoryModel($targetStatements);
+            // get pingback:service or pingback:to from resource
+            $pingbackTo = $memModel->getValue($target, 'http://purl.org/net/pingback/to');
 
-        // get pingback:service or pingback:to from resource
-        $pingbackTo = $memModel->getValue($target, 'http://purl.org/net/pingback/to');
+            if ($pingbackTo !== null) {
+                // send post to service
+                if ($comment === null) {
+                    $comment = 'Do you want to be my friend?';
+                }
 
-        if ($pingbackTo !== null) {
-            // send post to service
-            if ($comment === null) {
-                $comment = 'Do you want to be my friend?';
+                $fields = array (
+                    'source' => $source,
+                    'target' => $target,
+                    'comment' => $comment
+                );
+
+                // Should really replace curl with an ajax call
+                // open connection to pingback service
+                $ch = curl_init();
+
+                //set the url, number of POST vars, POST data
+                curl_setopt($ch, CURLOPT_URL, $pingbackTo);
+                curl_setopt($ch, CURLOPT_POST, count($fields));
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+                //execute post
+                $return = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $logger = $logger->info('ping send: Ping to ' . $target . ' successfull.');
+                //close connection
+                curl_close($ch);
+            } else {
+                $pingbackService = $memModel->getValue($target,
+                    'http://purl.org/net/pingback/service');
+                // TODO support XML-RPC pingbacks
             }
-
-            $fields = array (
-                'source' => $source,
-                'target' => $target,
-                'comment' => $comment
-            );
-
-            // Should really replace curl with an ajax call
-            // open connection to pingback service
-            $ch = curl_init();
-
-            //set the url, number of POST vars, POST data
-            curl_setopt($ch, CURLOPT_URL, $pingbackTo);
-            curl_setopt($ch, CURLOPT_POST, count($fields));
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-            //execute post
-            $return = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            //close connection
-            curl_close($ch);
         } else {
-            $pingbackService = $memModel->getValue($target, 'http://purl.org/net/pingback/service');
-            // TODO support XML-RPC pingbacks
+            $logger = $logger->info('ping send: Ping to ' . $target . ' not possible. No pingback server found.');
         }
     }
 
@@ -402,13 +405,13 @@ class Xodx_PingbackController extends Saft_Controller
 
 
 
-    public function testPingAction () {
+    public function testPingAction ($template) {
 
         echo $this->receivePing(
             'http://xodx.local/?c=resource&id=1b8c874744236dcdfcaaf08c817aa633',
             'http://xodx.local/?c=resource&id=805e60023b6f23384929d7869bd24185'
         );
-        return;
+        return $template;
 
      }
 }

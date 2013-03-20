@@ -75,15 +75,14 @@ class Xodx_FeedController extends Saft_Controller
     {
         // load feedxml and display activities
         $feed = DSSN_Activity_Feed_Factory::newFromXml($feedData);
-        $activityController = $this->_app->getController('Xodx_ActivityController');
+        $resourceController = $this->_app->getController('Xodx_ResourceController');
 
-        $nsXodx = 'http://xodx.org/ns#';
         $nsXsd = 'http://www.w3.org/2001/XMLSchema#';
 
         foreach ($feed->getActivities() as $key => $activity) {
             $date = $activity->getPublished();
             //$date = date('c');
-            $title = 'FeedImport' . $activity->getTitle();
+            $title = 'FeedImport: ' . $activity->getTitle();
             $activityUri = $activity->getIri();
             //$title = 'Imported with DSSN-LIB';
             $actor = $activity->getActor();
@@ -93,13 +92,35 @@ class Xodx_FeedController extends Saft_Controller
             $object = $activity->getObject();
             $objectUri = $object->getIri();
             //$contextUri = $activity->getTarget();
-            $act[] = new Xodx_Activity($activityUri, $actorUri, $verbUri, $objectUri, $date, null);
-            var_dump($act);
-            $activityController->addActivities($act);
+            $resourceController->importResource($activityUri);
         }
     }
 
-    public  function testFeedAction ()
+    /**
+     * Returns the resourceUri belonging to an activity feed
+     * @return string $resourceUri the uri belonging to an activity feed
+     */
+    public function getFeedResource($feedUri)
+    {
+        $bootstrap      = $this->_app->getBootstrap();
+        $model          = $bootstrap->getResource('model');
+        $feedController = $this->_app->getController('Xodx_FeedController');
+
+        $query = 'PREFIX dssn: <http://purl.org/net/dssn/> ' . PHP_EOL;
+        $query.= 'PREFIX aair: <http://xmlns.notu.be/aair#> ' . PHP_EOL;
+        $query.= 'SELECT ?resUri ' . PHP_EOL;
+        $query.= 'WHERE { ' . PHP_EOL;
+        $query.= '?resUri dssn:activityFeed      <' . $feedUri . '>. ' . PHP_EOL;
+        $query.= '}';
+        $resourceUri = $model->sparqlQuery($query);
+
+        if (count($resourceUri) > 0) {
+            return $resourceUri[0]['resUri'];
+        }
+        return null;
+    }
+
+    public  function testFeedAction ($template)
     {
      $feed = '<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:activity="http://activitystrea.ms/schema/1.0/">
@@ -112,7 +133,7 @@ class Xodx_FeedController extends Saft_Controller
 
     <entry>
       <title>&quot;Norman Radtke&quot; did &quot;http://xmlns.notu.be/aair#Post&quot; a &quot;http://rdfs.org/sioc/ns#Comment&quot;</title>
-      <id>' . htmlentities($this->_app->getBaseUri() . '?c=resource&id=' . md5(rand())) . '</id>
+      <id>' . htmlentities($this->_app->getBaseUri() . '?c=resource&id=1234' . md5(rand())) . '</id>
       <link href="http://xodx.local/?c=resource&amp;id=e72f0e767aea9e952478ecef5973c8c3" />
       <published>2012-10-29T19:57:26+01:00</published>
       <updated>2012-10-29T19:57:26+01:00</updated>
@@ -135,5 +156,6 @@ class Xodx_FeedController extends Saft_Controller
 
 </feed>';
      $this->feedToActivity($feed);
+     return $template;
     }
 }

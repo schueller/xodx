@@ -5,7 +5,7 @@ This is an implementation of the basic functionalities of a DSSN Provider, as de
 * [Semantic Pingback](http://aksw.org/Projects/SemanticPingback) for Friending
 * [Pubsubhubbub](http://code.google.com/p/pubsubhubbub/) (PuSH) for notification along the edges
 
-It is written in PHP and utilizes the Zend Framework, the [Erfurt Framework](http://erfurt-framework.org/) and [lib-dssn](https://github.com/seebi/lib-dssn-php/).
+It is written in PHP and utilizes the Zend Framework, the [Erfurt Framework](http://erfurt-framework.org/) and [lib-dssn](https://github.com/AKSW/lib-dssn-php).
 
 Installation
 ------------
@@ -33,4 +33,26 @@ in the xodx root directory (should be the same directory where you found this fi
 
 Code Conventions
 ----------------
-Currently, this project is developed using [OntoWiki's coding standard](http://code.google.com/p/ontowiki/wiki/CodingStandard).
+Currently, this project is developed using [OntoWiki's coding standard](https://github.com/AKSW/OntoWiki/wiki/Coding-Standards).
+
+License
+-------
+Xodx - An implementation of the basic functionalities of a DSSN Provider
+
+Copyright (C) 2013  Natanael Arndt, Norman Radtke
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA, or see
+[http://www.gnu.org/licenses/gpl-2.0.html](http://www.gnu.org/licenses/gpl-2.0.html)
+for more details.
