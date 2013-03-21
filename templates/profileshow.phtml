@@ -3,20 +3,27 @@
 <div class="profile">
     <h3><?= $this->profileshowName ?></h3>
     <?php if(isset($this->profileshowNick)) : ?> <h4><?= $this->profileshowNick ?></h4> <?php endif; ?>
-    <h5>knows ...</h5>
+    <h5>Friends:</h5>
     <form method="post" action="?c=profile&amp;a=addfriend">
-    <ul>
+    <div class="row-fluid">
 <?php
 foreach($this->profileshowKnows as $contact) :
 if ($contact['name'] != null) {
     $name = $contact['name'];
+} elseif ($contact['nick'] != null) {
+    $name = $contact['nick'];
 } else {
-    $name = $contact['contactUri'];
+    $name = "unknown name";
 }
 ?>
-        <li><a href="?c=profile&amp;a=show&amp;person=<?= urlencode($contact['contactUri']) ?>"><?= $name ?></a></li>
+        <div class="span2"><div><?= $name ?></div><div><a href="?c=profile&amp;a=show&amp;person=<?= urlencode($contact['contactUri']) ?>"><?= $contact['contactUri'] ?></a></div></div>
 <?php endforeach; ?>
-    </ul>
+    </div>
+    <br>
+	<div class="input-append">
+                <input type="hidden" name="person" value="<?= htmlentities($this->profileshowPersonUri) ?>" />
+                <input type="text" name="friend" /><button class="btn btn-primary" type="submit">Add</button>
+            </div>
     </form>
     <h2>Pings</h2>
     <ul>
@@ -27,7 +34,7 @@ if ($contact['name'] != null) {
     <h2>Activities</h2>
     <?php if (isset($this->profileshowActivities)) : ?>
     <?php foreach ($this->profileshowActivities as $activity) : ?>
-    <div class="activity">
+    <div class="activity well">
         <p>
             <a href="<?= $activity['uri'] ?>"><strong><?= $activity['title'] ?></strong></a><br />
         </p>
@@ -37,7 +44,7 @@ if ($contact['name'] != null) {
                 <a href="<?= htmlentities($activity['verb']) ?>"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></a>
                 <?php if (isset($activity['objectType'])) : ?>
                     a <a href="<?= htmlentities($activity['object']) ?>">
-                      <?= Saft_Tools::getSpokenWord($activity['type']) ?></a>
+                      <?= Saft_Tools::getSpokenWord($activity['objectType']) ?></a>
                         at <?= $activity['pubDate'] ?>
                     <em><a href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
                     Show Feed of Object</a></em>
@@ -47,7 +54,10 @@ if ($contact['name'] != null) {
                     <em><a href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
                     Show Feed of Object</a></em>
                 <?php endif; ?>
-   
+
+                <input type="hidden" name="object" value="<?= htmlentities($activity['uri'])?>" />
+                <input type="hidden" name="actor" value="<?= htmlentities($this->profileshowPersonUri) ?>" />
+                <button class="btn btn-mini" type="submit">Reply</button>
             </form>
         </div>
     </div>

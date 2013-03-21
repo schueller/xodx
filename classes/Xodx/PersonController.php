@@ -73,87 +73,6 @@ class Xodx_PersonController extends Xodx_ResourceController
     }
 
     /**
-     * This method returns all activities of a person
-     * @param $personUri the uri of the person whoes activities should be returned
-     * @return an array of activities
-     * TODO return an array of DSSN_Activity objects
-     */
-    public function getActivities ($personUri)
-    {
-        // There are two namespaces, one is used in atom files the other one for RDF
-        $nsAairAtom = 'http://activitystrea.ms/schema/1.0/';
-        $nsAair = 'http://xmlns.notu.be/aair#';
-
-        $model = $this->_app->getBootstrap()->getResource('model');
-
-        if ($personUri === null) {
-            return null;
-        }
-
-        $query = '' .
-            'PREFIX atom: <http://www.w3.org/2005/Atom/> ' .
-            'PREFIX aair: <http://xmlns.notu.be/aair#> ' .
-            'SELECT ?activity ?date ?verb ?object ' .
-            'WHERE { ' .
-            '   ?activity a                   aair:Activity ; ' .
-            '             aair:activityActor  <' . $personUri . '> ; ' .
-            '             atom:published      ?date ; ' .
-            '             aair:activityVerb   ?verb ; ' .
-            '             aair:activityObject ?object . ' .
-            '} ' .
-            'ORDER BY DESC(?date)';
-        $activitiesResult = $model->sparqlQuery($query);
-
-        $activities = array();
-
-        foreach ($activitiesResult as $activity) {
-            $activityUri = $activity['activity'];
-            $verbUri = $activity['verb'];
-            $objectUri = $activity['object'];
-
-            $activity['date'] = self::_issueE24fix($activity['date']);
-
-            $nameHelper = new Xodx_NameHelper($this->_app);
-            $personName = $nameHelper->getName($personUri);
-
-            $activity = array(
-                'title' => '"' . $personName . '" did "' . $activity['verb'] . '".',
-                'uri' => $activityUri,
-                'author' => 'Natanael',
-                'authorUri' => $personUri,
-                'pubDate' => $activity['date'],
-                'verb' => $activity['verb'],
-                'object' => $activity['object'],
-            );
-
-            if ($verbUri == $nsAair . 'Post') {
-                $objectResult = $model->sparqlQuery(
-                    'PREFIX atom: <http://www.w3.org/2005/Atom/> ' .
-                    'PREFIX aair: <http://xmlns.notu.be/aair#> ' .
-                    'PREFIX sioc: <http://rdfs.org/sioc/ns#> ' .
-                    'SELECT ?type ?content ?date ' .
-                    'WHERE { ' .
-                    '   <' . $objectUri . '> a ?type ; ' .
-                    '        sioc:created_at ?date ; ' .
-                    '        aair:content ?content . ' .
-                    '} '
-                );
-
-                if (count($objectResult) > 0) {
-                    $activity['objectType'] = $objectResult[0]['type'];
-                    $activity['objectPubDate'] = self::_issueE24fix($objectResult[0]['date']);
-                    $activity['objectContent'] = $objectResult[0]['content'];
-                }
-            } else {
-            }
-
-            $activities[] = $activity;
-        }
-
-        return $activities;
-    }
-
-    /**
      * Get an array of new notifications for the person
      */
     public function getNotifications ($personUri)
@@ -199,10 +118,11 @@ class Xodx_PersonController extends Xodx_ResourceController
 
         // TODO deal with language tags
         $contactsQuery = 'PREFIX foaf: <' . $nsFoaf . '> ' . PHP_EOL;
-        $contactsQuery.=     'SELECT ?contactUri ?name ' . PHP_EOL;
+        $contactsQuery.=     'SELECT ?contactUri ?name ?nick ' . PHP_EOL;
         $contactsQuery.= 'WHERE { ' . PHP_EOL;
         $contactsQuery.= '   <' . $personUri . '> foaf:knows ?contactUri . ' . PHP_EOL;
         $contactsQuery.= '   OPTIONAL {?contactUri foaf:name ?name .} ' . PHP_EOL;
+		$contactsQuery.= '   OPTIONAL {?contactUri foaf:nick ?nick .} ' . PHP_EOL;
         $contactsQuery.= '}';
 
         $profile = $model->sparqlQuery($profileQuery);
@@ -232,17 +152,8 @@ class Xodx_PersonController extends Xodx_ResourceController
             $knows = $model->sparqlQuery($contactsQuery);
         }
 
-        $userController  = $this->_app->getController('Xodx_UserController');
-        $userUri         = $userController->getUserUri($personUri);
-        $subResources    = $userController->getSubscriptionResources($userUri);
-
         $activityController = $this->_app->getController('Xodx_ActivityController');
-        $activities = array();
-
-        foreach ($subResources as $resourceUri) {
-            $act = $activityController->getActivities($resourceUri);
-            $activities = array_merge($activities, $act);
-        }
+        $activities = $activityController->getActivities($personUri);
 
         $news = $this->getNotifications($personUri);
 
