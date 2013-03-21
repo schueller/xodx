@@ -405,8 +405,11 @@ class Xodx_UserController extends Xodx_ResourceController
 				'	<'.$this->getUser()->getUri().'> sioc:account_of ?personUri . '.
 				' }';
 
-		$personUri = $model->sparqlQuery($personUriQuery)[0]['personUri'];
-
+        $personUrires = $model->sparqlQuery($personUriQuery);
+        if ($personUrires) {
+		    $personUri = $personUrires[0]['personUri'];
+        
+        
         $nsFoaf = 'http://xmlns.com/foaf/0.1/';
 
         $profileQuery = 'PREFIX foaf: <' . $nsFoaf . '> ' .
@@ -456,7 +459,7 @@ class Xodx_UserController extends Xodx_ResourceController
         $activityController = $this->_app->getController('Xodx_ActivityController');
         $activities = array();
         // owner activities
-        $activities[] = $activityController->getActivities($personUri);
+        $activities[0] = $activityController->getActivities($personUri);
         /* friend activities */
         foreach( $knows as $persons => $person) {
             $activities[] = $activityController->getActivities($person['contactUri']);
@@ -472,7 +475,7 @@ class Xodx_UserController extends Xodx_ResourceController
         $template->profileshowKnows = $knows;
         $template->profileshowNews = $news;
         $template->addContent('templates/usershow.phtml');
-
+        }
 		return $template;
 	}
 
