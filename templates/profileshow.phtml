@@ -94,12 +94,15 @@ if ($contact['name'] != null) {
 			<?php endforeach; ?>
 		</div>
 		<br>
+		<?php if($this->profileshowLoggedIn) { ?>
 		<div class="input-append">
 			<input type="hidden" name="person"
-				value="<?= htmlentities($this->profileshowPersonUri) ?>" /> <input
-				type="text" name="friend" />
-			<button class="btn btn-primary" type="submit">Add</button>
+				value="<?= htmlentities($this->profileshowLogInUri) ?>" />
+			<input type="hidden" name="friend" 
+				value="<?= htmlentities($this->profileshowPersonUri) ?>" />
+			<button class="btn btn-primary" type="submit">Add <?= $this->profileshowName ?> as Friend</button>
 		</div>
+		<?php } ?>
 	</form>
 </div>
 </div>

@@ -50,7 +50,6 @@ class Xodx_ProfileController extends Xodx_ResourceController
         // get URI
         $personUri = $request->getValue('person', 'post');
         $friendUri = $request->getValue('friend', 'post');
-
         $personController = $this->_app->getController('Xodx_PersonController');
 
         $personController->addFriend($personUri, $friendUri);

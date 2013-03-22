@@ -156,8 +156,28 @@ class Xodx_PersonController extends Xodx_ResourceController
         $activities = $activityController->getActivities($personUri);
 
         $news = $this->getNotifications($personUri);
+		/* get logegin user */
+		$userController = $this->_app->getController('Xodx_UserController');
+        $userUri = $userController->getUser()->getUri();
 
-        $template->profileshowPersonUri = $personUri;
+		$nsSioc = 'http://rdfs.org/sioc/ns#';
+		$personUriQuery = 'PREFIX sioc: <'.$nsSioc.'>'.
+				'SELECT ?personUri '.
+				'WHERE { '.
+				'	<'.$userUri.'> sioc:account_of ?personUri . '.
+				' }';
+
+        $personUrires = $model->sparqlQuery($personUriQuery);
+		/* if someone is loggedin, show add as Friend, else not */
+        if ($personUrires) {
+		    $logedInUserUri = $personUrires[0]['personUri'];
+        	$template->profileshowLogInUri = $logedInUserUri;
+			$template->profileshowLoggedIn = true;
+		} else {
+			$template->profileshowLoggedIn = false;
+		}
+		/* */
+		$template->profileshowPersonUri = $personUri;
         $template->profileshowDepiction = $profile[0]['depiction'];
         $template->profileshowName = $profile[0]['name'];
         $template->profileshowNick = $profile[0]['nick'];
