@@ -63,31 +63,40 @@
 	                <?php foreach ($this->profileshowActivities as $activitiesfriends => $activities) : ?>
                     <?php foreach ($activities as $activity) : ?>
                     <div class="activity well">
-                        <p>
-                            <a href="<?= $activity['uri'] ?>"><strong><?= $activity['title'] ?></strong></a><br />
-                        </p>
-                        <div>
-                            <form method="post" action="?c=activity&amp;a=replyForm">
-                                <a href="<?= htmlentities($activity['authorUri']) ?>"><?= htmlentities($activity['author']) ?></a>
-                                <a href="<?= htmlentities($activity['verb']) ?>"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></a>
-                                <?php if (isset($activity['objectType'])) : ?>
-                                    a <a href="<?= htmlentities($activity['object']) ?>">
-                               <?= Saft_Tools::getSpokenWord($activity['type']) ?></a>
-                                   at <?= $activity['pubDate'] ?>
-                               <em><a href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
-                               Show Feed of Object</a></em>
-                               <?php else : ?>
-                               <a href="<?= htmlentities($activity['object']) ?>">
-                               <?= ($activity['object']) ?></a> at <?= $activity['pubDate'] ?>
-                                <em><a href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
-                                Show Feed of Object</a></em>
-                                <?php endif; ?>
-                                <input type="hidden" name="object" value="<?= htmlentities($activity['object'])?>" />
-                                <input type="hidden" name="actor" value="<?= htmlentities($this->profileshowPersonUri) ?>" />
-                                <button class="btn btn-mini" type="submit">Reply</button>
-                        </form>
-                    </div>
-                </div>
+		                    <div class="row-fluid">
+		                <form method="post" action="?c=activity&amp;a=replyForm">
+				            <div class="span10">
+		        			<p>
+	        					<a href="<?= $activity['uri'] ?>"><strong><?= $activity['title'] ?></strong></a><br />
+	    				</p>
+	    				<a href="<?= htmlentities($activity['authorUri']) ?>"><?= htmlentities($activity['author']) ?></a> 
+	            			<a href="<?= htmlentities($activity['verb']) ?>"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></a>
+        				<?php if (isset($activity['objectType'])) : ?>
+	            			a <a href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['objectType']) ?></a>
+	        			at
+	                			<?= $activity['pubDate'] ?>
+				                <em><a
+				    	href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
+			    			Show Feed of Object</a></em>
+			        	<?php else : ?>
+		    		<a href="<?= htmlentities($activity['object']) ?>"> <?= ($activity['object']) ?></a>
+			    	at
+		    		<?= $activity['pubDate'] ?>
+    				<em><a
+	    				href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
+	    					Show Feed of Object</a></em>
+	    			<?php endif; ?>
+    
+	        			<input type="hidden" name="object"
+	    				value="<?= htmlentities($activity['uri'])?>" /> <input
+	        				type="hidden" name="actor"
+	        				value="<?= htmlentities($this->profileshowPersonUri) ?>" />
+	        			</div><div class="span1">
+	    			<button class="btn btn-mini" type="submit">Reply</button>
+				</div>
+			</form>
+		</div>
+		</div>
                 <?php endforeach; ?>
             	<?php endforeach; ?>
                 <?php else: ?>

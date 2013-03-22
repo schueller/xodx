@@ -25,18 +25,14 @@
 	<?php if (isset($this->profileshowActivities)) : ?>
 	<?php foreach ($this->profileshowActivities as $activity) : ?>
 	<div class="activity well">
-		<p>
-			<a href="<?= $activity['uri'] ?>"><strong>
-					<?= $activity['title'] ?>
-			</strong></a><br />
-		</p>
-		<div>
-			<form method="post" action="?c=activity&amp;a=replyForm">
-				<a href="<?= htmlentities($activity['authorUri']) ?>">
-					<?= htmlentities($activity['author']) ?>
-				</a> <a href="<?= htmlentities($activity['verb']) ?>">
-					<?= Saft_Tools::getSpokenWord($activity['verb']) ?>
-				</a>
+		<div class="row-fluid">
+		<form method="post" action="?c=activity&amp;a=replyForm">
+				<div class="span10">
+					<p>
+						<a href="<?= $activity['uri'] ?>"><strong><?= $activity['title'] ?></strong></a><br />
+					</p>
+					<a href="<?= htmlentities($activity['authorUri']) ?>"><?= htmlentities($activity['author']) ?></a> 
+				<a href="<?= htmlentities($activity['verb']) ?>"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></a>
 				<?php if (isset($activity['objectType'])) : ?>
 				a <a href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['objectType']) ?></a>
 				at
@@ -45,7 +41,7 @@
 					href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
 						Show Feed of Object</a></em>
 				<?php else : ?>
-				<a href="<?= htmlentities($activity['object']) ?>"> <?= ($activity['object']) ?></a>
+				<a href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['object']) ?></a>
 				at
 				<?= $activity['pubDate'] ?>
 				<em><a
@@ -57,19 +53,19 @@
 					value="<?= htmlentities($activity['uri'])?>" /> <input
 					type="hidden" name="actor"
 					value="<?= htmlentities($this->profileshowPersonUri) ?>" />
+				</div><div class="span1">
 				<button class="btn btn-mini" type="submit">Reply</button>
+				</div>
 			</form>
 		</div>
-	</div>
+		</div>
 	<?php endforeach; ?>
 	<?php else: ?>
-	<div class="well">There are not Activities of this person</div>
+		<div class="well">There are not Activities of this person</div>
 	<?php endif; ?>
-</div>
+	</div>
     <div class="span3">
-	<h5>Friends:</h5>
-	<form method="post" action="?c=profile&amp;a=addfriend">
-		<div class="row-fluid">
+	<h5>Friends:</h5>		
 			<?php
 foreach($this->profileshowKnows as $contact) :
 if ($contact['name'] != null) {
@@ -92,10 +88,10 @@ if ($contact['name'] != null) {
 				</div>
 			
 			<?php endforeach; ?>
-		</div>
 		<br>
 		<?php if($this->profileshowLoggedIn) { ?>
 		<div class="input-append">
+			<form method="post" action="?c=profile&amp;a=addfriend">
 			<input type="hidden" name="person"
 				value="<?= htmlentities($this->profileshowLogInUri) ?>" />
 			<input type="hidden" name="friend" 
@@ -104,5 +100,7 @@ if ($contact['name'] != null) {
 		</div>
 		<?php } ?>
 	</form>
+	<a class="btn btn-primary" href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($this->profileshowPersonUri) ?>">Show Activity Feed</a>
+</div>
 </div>
 </div>
