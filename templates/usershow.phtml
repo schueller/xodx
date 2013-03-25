@@ -75,11 +75,10 @@
 	            			a <a href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['objectType']) ?></a>
 	        			at
 	                			<?= $activity['pubDate'] ?>
-				                <em><a
-				    	href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
+				                <em><a class="btn btn-mini" href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
 			    			Show Feed of Object</a></em>
 			        	<?php else : ?>
-		    		<a href="<?= htmlentities($activity['object']) ?>"> <?= ($activity['object']) ?></a>
+		    		<a class="btn btn-mini" href="<?= htmlentities($activity['object']) ?>"> <?= ($activity['object']) ?></a>
 			    	at
 		    		<?= $activity['pubDate'] ?>
     				<em><a

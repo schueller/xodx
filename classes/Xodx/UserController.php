@@ -459,6 +459,9 @@ class Xodx_UserController extends Xodx_ResourceController
         $activityController = $this->_app->getController('Xodx_ActivityController');
         $activities = array();
         // owner activities
+        /* TODO filter double entries 
+         * eg, friended status  
+         */
         $activities[0] = $activityController->getActivities($personUri);
         /* friend activities */
         foreach( $knows as $persons => $person) {

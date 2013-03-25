@@ -125,7 +125,7 @@ class Xodx_PersonController extends Xodx_ResourceController
 		$contactsQuery.= '   OPTIONAL {?contactUri foaf:nick ?nick .} ' . PHP_EOL;
         $contactsQuery.= '}';
 
-        $profile = $model->sparqlQuery($profileQuery);
+		$profile = $model->sparqlQuery($profileQuery);
 
         if (count($profile) < 1) {
             $linkeddataHelper = $this->_app->getHelper('Saft_Helper_LinkeddataHelper');
@@ -171,8 +171,13 @@ class Xodx_PersonController extends Xodx_ResourceController
 		/* if someone is loggedin, show add as Friend, else not */
         if ($personUrires) {
 		    $logedInUserUri = $personUrires[0]['personUri'];
-        	$template->profileshowLogInUri = $logedInUserUri;
-			$template->profileshowLoggedIn = true;
+			$contactLoginQuery = 'ASK { <'.$logedInUserUri.'> foaf:knows <'.$personUri.'>  }';
+			if(($model->sparqlQuery($contactLoginQuery)) || ($logedInUserUri == $personUri)) {
+				$template->profileshowLoggedIn = false; 
+			} else {
+        		$template->profileshowLogInUri = $logedInUserUri;
+				$template->profileshowLoggedIn = true;
+			}
 		} else {
 			$template->profileshowLoggedIn = false;
 		}
