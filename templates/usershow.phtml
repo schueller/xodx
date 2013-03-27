@@ -71,19 +71,20 @@
 	    				<a href="<?= htmlentities($activity['authorUri']) ?>"><?= htmlentities($activity['author']) ?></a> 
 	            			<a href="<?= htmlentities($activity['verb']) ?>"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></a>
         				<?php if (isset($activity['objectType'])) : ?>
-	            			<a href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['objectType']) ?></a> at <?= $activity['pubDate'] ?>
-				                <em><a class="btn btn-mini" href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">Show Feed of Object</a></em>
-			        	<?php else : ?>
-		    		<a  href="<?= htmlentities($activity['object']) ?>"> <?= ($activity['object']) ?></a> at <?= $activity['pubDate'] ?>
-    				<em><a class="btn btn-mini" href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">Show Feed of Object</a></em>
-	    			<?php endif; ?>
+				<a  href="<?= htmlentities($activity['verb']) ?>"><span class="label label-important"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></span></a>
+				<a href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['objectContent']) ?></a><br>at <?= $activity['pubDate'] ?>
+				<?php else : ?>
+				<a  href="<?= htmlentities($activity['verb']) ?>"><span class="label label-info"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></span></a>
+				<a  href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['object']) ?></a><br>at <?= $activity['pubDate'] ?>
+				<?php endif; ?>
     
 	        			<input type="hidden" name="object"
 	    				value="<?= htmlentities($activity['uri'])?>" /> <input
 	        				type="hidden" name="actor"
 	        				value="<?= htmlentities($this->profileshowPersonUri) ?>" />
 	        			</div><div class="span1">
-	    			<button class="btn btn-mini" type="submit">Reply</button>
+                    <a class="btn btn-mini btn-block" href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">Show Feed of Object</a>
+	    			<button class="btn btn-mini btn-block" type="submit">Reply</button>
 				</div>
 			</form>
 		</div>
