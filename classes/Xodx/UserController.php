@@ -456,18 +456,9 @@ class Xodx_UserController extends Xodx_ResourceController
             $knows = $model->sparqlQuery($contactsQuery);
         }
 
-        $activityController = $this->_app->getController('Xodx_ActivityController');
-        $activities = array();
-        // owner activities
-        /* TODO filter double entries 
-         * eg, friended status  
-         */
-        $activities[0] = $activityController->getActivities($personUri);
-        /* friend activities */
-        foreach( $knows as $persons => $person) {
-            $activities[] = $activityController->getActivities($person['contactUri']);
-        }
-        
+        $activities = $this->getActivityStream($this->getUser());
+        print_r($activities);    
+
         $news = $this->getNotifications($personUri);
 
         $template->profileshowPersonUri = $personUri;

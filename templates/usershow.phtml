@@ -60,30 +60,22 @@
                         </form>
                     <h2>Activities</h2>
                     <?php if (isset($this->profileshowActivities)) : ?>
-	                <?php foreach ($this->profileshowActivities as $activitiesfriends => $activities) : ?>
-                    <?php foreach ($activities as $activity) : ?>
+	                <?php foreach ($this->profileshowActivities as $activity ) : ?>
                     <div class="activity well">
 		                    <div class="row-fluid">
 		                <form method="post" action="?c=activity&amp;a=replyForm">
 				            <div class="span10">
 		        			<p>
-	        					<a href="<?= $activity['uri'] ?>"><strong><?= $activity['title'] ?></strong></a><br />
+	        					<a href="<?= $activity['uri'] ?>"><strong><?= $activity['author'] ?> posted <?= $activity['objectContent'] ?> at <?= $activity['objectPubDate'] ?></strong></a><br />
 	    				</p>
 	    				<a href="<?= htmlentities($activity['authorUri']) ?>"><?= htmlentities($activity['author']) ?></a> 
 	            			<a href="<?= htmlentities($activity['verb']) ?>"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></a>
         				<?php if (isset($activity['objectType'])) : ?>
-	            			a <a href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['objectType']) ?></a>
-	        			at
-	                			<?= $activity['pubDate'] ?>
-				                <em><a class="btn btn-mini" href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
-			    			Show Feed of Object</a></em>
+	            			<a href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['objectType']) ?></a> at <?= $activity['pubDate'] ?>
+				                <em><a class="btn btn-mini" href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">Show Feed of Object</a></em>
 			        	<?php else : ?>
-		    		<a class="btn btn-mini" href="<?= htmlentities($activity['object']) ?>"> <?= ($activity['object']) ?></a>
-			    	at
-		    		<?= $activity['pubDate'] ?>
-    				<em><a
-	    				href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">
-	    					Show Feed of Object</a></em>
+		    		<a  href="<?= htmlentities($activity['object']) ?>"> <?= ($activity['object']) ?></a> at <?= $activity['pubDate'] ?>
+    				<em><a class="btn btn-mini" href="?c=feed&amp;a=getFeed&amp;uri=<?= urlencode($activity['object']) ?>">Show Feed of Object</a></em>
 	    			<?php endif; ?>
     
 	        			<input type="hidden" name="object"
@@ -96,7 +88,6 @@
 			</form>
 		</div>
 		</div>
-                <?php endforeach; ?>
             	<?php endforeach; ?>
                 <?php else: ?>
                 <div class="well">

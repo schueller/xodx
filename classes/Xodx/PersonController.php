@@ -187,6 +187,7 @@ class Xodx_PersonController extends Xodx_ResourceController
         $template->profileshowName = $profile[0]['name'];
         $template->profileshowNick = $profile[0]['nick'];
         $template->profileshowActivities = $activities;
+		
         $template->profileshowKnows = $knows;
         $template->profileshowNews = $news;
         $template->addContent('templates/profileshow.phtml');
