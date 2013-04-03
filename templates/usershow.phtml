@@ -65,11 +65,7 @@
 		                    <div class="row-fluid">
 		                <form method="post" action="?c=activity&amp;a=replyForm">
 				            <div class="span10">
-		        			<p>
-	        					<a href="<?= $activity['uri'] ?>"><strong><? $activity['author'] ?> posted <? $activity['objectContent'] ?> at <? $activity['objectPubDate'] ?></strong></a><br />
-	    				</p>
 	    				<a href="<?= htmlentities($activity['authorUri']) ?>"><?= htmlentities($activity['author']) ?></a> 
-	            			<a href="<?= htmlentities($activity['verb']) ?>"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></a>
         				<?php if (isset($activity['objectType'])) { ?>
 				<a  href="<?= htmlentities($activity['verb']) ?>"><span class="label label-important"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></span></a>
 				<?php if(isset($activity['objectContent'])) { ?>
