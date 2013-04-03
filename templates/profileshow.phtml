@@ -33,13 +33,16 @@
 					</p>
 					<!--<a href="<?= htmlentities($activity['authorUri']) ?>"><?= htmlentities($activity['author']) ?></a> -->
 				
-				<?php if (isset($activity['objectType'])) : ?>
+				<?php if (isset($activity['objectType'])) { ?>
 				<a  href="<?= htmlentities($activity['verb']) ?>"><span class="label label-important"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></span></a>
-				<a href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['objectContent']) ?></a><br>at <?= $activity['pubDate'] ?>
-				<?php else : ?>
+				<?php if(isset($activity['objectContent'])) { ?>
+						<a href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['objectContent']) ?></a><br>at <?= $activity['pubDate'] ?>
+					<?php } else { ?>
+						<a href="<?= htmlentities($activity['object']) ?>"><?= htmlentities($activity['object']) ?></a><br>at <?= $activity['pubDate'] ?>
+				<?php } } else { ?>
 				<a  href="<?= htmlentities($activity['verb']) ?>"><span class="label label-info"><?= Saft_Tools::getSpokenWord($activity['verb']) ?></span></a>
 				<a  href="<?= htmlentities($activity['object']) ?>"> <?= Saft_Tools::getSpokenWord($activity['object']) ?></a><br>at <?= $activity['pubDate'] ?>
-				<?php endif; ?>
+				<?php } ?>
 
 				<input type="hidden" name="object"
 					value="<?= htmlentities($activity['uri'])?>" /> <input

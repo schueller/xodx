@@ -351,7 +351,7 @@ class Xodx_UserController extends Xodx_ResourceController
 
         $activityController = $this->_app->getController('Xodx_ActivityController');
         $activities = array();
-
+        //print_r($subscribedResources);
         foreach ($subscribedResources as $resourceUri) {
             $act = $activityController->getActivities($resourceUri);
             $activities = array_merge($activities, $act);
@@ -457,7 +457,7 @@ class Xodx_UserController extends Xodx_ResourceController
         }
 
         $activities = $this->getActivityStream($this->getUser());
-        print_r($activities);    
+        //print_r($activities);    
 
         $news = $this->getNotifications($personUri);
 
